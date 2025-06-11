@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
 import 'theme.dart';
 import 'pages/home_page.dart';
+import 'services/database_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializa o banco de dados
+  try {
+    await DatabaseService().database;
+  } catch (e) {
+    print('Erro ao inicializar banco de dados: $e');
+  }
+  
   runApp(const MyApp());
 }
 
