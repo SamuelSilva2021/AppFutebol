@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import '../models/jogador.dart';
 import '../models/time.dart';
 
@@ -19,6 +20,9 @@ class _CampoFutebolWidgetState extends State<CampoFutebolWidget>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+  
+  // Novo mapa para armazenar as posições dinâmicas dos jogadores
+  final Map<String, Offset> _playerPositions = {}; // id do jogador -> posição relativa (0.0 a 1.0)
 
   @override
   void initState() {
@@ -45,6 +49,67 @@ class _CampoFutebolWidgetState extends State<CampoFutebolWidget>
     ));
     
     _animationController.forward();
+
+    // Inicializa as posições dos jogadores
+    _initializePlayerPositions();
+  }
+
+  @override
+  void didUpdateWidget(covariant CampoFutebolWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reinicializa as posições se os times mudaram
+    // Compara se as listas de times são diferentes (por tamanho ou ID dos jogadores)
+    if (widget.times.length != oldWidget.times.length ||
+        !_areTeamsEffectivelyEqual(widget.times, oldWidget.times)) {
+      _playerPositions.clear(); // Limpa as posições antigas
+      _initializePlayerPositions();
+    }
+  }
+
+  // Método auxiliar para comparar times (pode ser otimizado se precisar de mais granularidade)
+  bool _areTeamsEffectivelyEqual(List<Time> newTeams, List<Time> oldTeams) {
+    if (newTeams.length != oldTeams.length) return false;
+    for (int i = 0; i < newTeams.length; i++) {
+      if (newTeams[i].nome != oldTeams[i].nome ||
+          newTeams[i].jogadores.length != oldTeams[i].jogadores.length) {
+        return false;
+      }
+      // Poderia adicionar uma comparação mais profunda dos IDs dos jogadores se necessário
+    }
+    return true;
+  }
+
+  // Novo método para inicializar as posições
+  void _initializePlayerPositions() {
+    final List<Offset> defaultPositions = [
+      const Offset(0.05, 0.45),   // Posição para o Goleiro (menor overall)
+      const Offset(0.2, 0.15),  // Posição para Zagueiro 1 (2º menor overall)
+      const Offset(0.2, 0.75),  // Posição para Zagueiro 2 (3º menor overall)
+      const Offset(0.50, 0.50),  // Posição para Meio-campo 1 (4º menor overall)
+      const Offset(0.70, 0.15),  // Posição para Meio-campo 2 (5º menor overall)
+      const Offset(0.70, 0.75),  // Posição para Atacante (6º menor overall - ou maior se só tiver 6)
+    ];
+
+    for (final time in widget.times) {
+      // Cria uma cópia e ordena os jogadores do time por overall (do menor para o maior)
+      final jogadoresDoTimeOrdenados = List<Jogador>.from(time.jogadores)
+        ..sort((a, b) => a.overall.compareTo(b.overall));
+
+      for (int i = 0; i < jogadoresDoTimeOrdenados.length; i++) {
+        final jogador = jogadoresDoTimeOrdenados[i];
+        if (!_playerPositions.containsKey(jogador.id)) {
+          // Atribui a posição fixa baseada na ordem de overall
+          // Se o número de jogadores for maior que as posições fixas, usa a lógica de fallback
+          final pos = i < defaultPositions.length
+              ? defaultPositions[i]
+              : Offset(
+                  0.5 + (i % 2 == 0 ? 0.1 : -0.1), // Fallback para jogadores extras
+                  0.5 + (i % 3 == 0 ? 0.1 : -0.1),
+                );
+          _playerPositions[jogador.id] = pos;
+        }
+      }
+    }
   }
 
   @override
@@ -169,19 +234,70 @@ class _CampoFutebolWidgetState extends State<CampoFutebolWidget>
               // Campo de futebol
               AspectRatio(
                 aspectRatio: 1.5,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(16.0),
-                    border: Border.all(
-                      color: Colors.green.shade300,
-                      width: 3.0,
-                    ),
-                  ),
-                  child: CustomPaint(
-                    painter: CampoPainter(),
-                    child: _buildPosicionamentoJogadores(time.jogadores, corTime),
-                  ),
+                child: LayoutBuilder( // Usar LayoutBuilder para obter o tamanho do campo
+                  builder: (context, constraints) {
+                    final campoWidth = constraints.maxWidth;
+                    final campoHeight = constraints.maxHeight;
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16.0),
+                        border: Border.all(
+                          color: Colors.green.shade300,
+                          width: 3.0,
+                        ),
+                      ),
+                      child: CustomPaint(
+                        painter: CampoPainter(),
+                        child: DragTarget<Jogador>( // O campo é um DragTarget
+                          builder: (context, candidateData, rejectedData) {
+                            return Stack(
+                              children: time.jogadores.map((jogador) {
+                                // Obtém a posição do jogador do estado
+                                final position = _playerPositions[jogador.id] ?? Offset.zero;
+
+                                // Calcula as posições left e top baseadas nas dimensões do campo
+                                final double left = position.dx * campoWidth;
+                                final double top = position.dy * campoHeight;
+
+                                return Positioned(
+                                  left: left - 25, // Ajuste para centralizar o círculo (metade da largura do jogador)
+                                  top: top - 25,  // Ajuste para centralizar o círculo (metade da altura do jogador)
+                                  child: Draggable<Jogador>( // Cada jogador é um Draggable
+                                    data: jogador,
+                                    feedback: Material(
+                                      color: Colors.transparent,
+                                      child: _buildJogadorWidget(jogador, corTime),
+                                    ),
+                                    childWhenDragging: Opacity(
+                                      opacity: 0.5,
+                                      child: _buildJogadorWidget(jogador, corTime),
+                                    ),
+                                    child: _buildJogadorWidget(jogador, corTime),
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          },
+                          onWillAcceptWithDetails: (details) => true, // Aceita qualquer jogador
+                          onAcceptWithDetails: (details) {
+                            setState(() {
+                              // Converte a posição global para a posição relativa ao DragTarget
+                              final RenderBox renderBox = context.findRenderObject() as RenderBox;
+                              final Offset localOffset = renderBox.globalToLocal(details.offset);
+
+                              // Calcula a nova posição percentual (0.0 a 1.0)
+                              final newRelativeX = localOffset.dx / campoWidth;
+                              final newRelativeY = localOffset.dy / campoHeight;
+                              
+                              // Atualiza a posição do jogador no mapa
+                              _playerPositions[details.data.id] = Offset(newRelativeX, newRelativeY);
+                            });
+                          },
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -191,37 +307,7 @@ class _CampoFutebolWidgetState extends State<CampoFutebolWidget>
     );
   }
 
-  Widget _buildPosicionamentoJogadores(List<Jogador> jogadores, Color corTime) {
-    // Posições fixas no campo (percentuais da largura/altura)
-    final posicoes = [
-      const Offset(0.03, 0.35),   // Goleiro (esquerda)
-      const Offset(0.2, 0.03),  // Zagueiro 1 (esquerda superior)
-      const Offset(0.2, 0.55),  // Zagueiro 2 (esquerda inferior)
-      const Offset(0.45, 0.35),  // Meio-campo 1 (centro superior)
-      const Offset(0.70, 0.1),  // Meio-campo 2 (centro inferior)
-      const Offset(0.70, 0.55),  // Atacante (direita)
-    ];
-
-    return Stack(
-      children: jogadores.asMap().entries.map((entry) {
-        final index = entry.key;
-        final jogador = entry.value;
-        
-        // Se não houver posição definida para o índice, usar uma posição padrão
-        final posicao = index < posicoes.length 
-            ? posicoes[index] 
-            : Offset(0.5 + (index % 2 == 0 ? 0.1 : -0.1), 0.5 + (index % 3 == 0 ? 0.1 : -0.1));
-        
-        return Positioned(
-          left: posicao.dx * MediaQuery.of(context).size.width * 0.8,
-          top: posicao.dy * MediaQuery.of(context).size.width * 0.5,
-          child: _buildJogadorWidget(jogador, corTime, index),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildJogadorWidget(Jogador jogador, Color corTime, int posicao) {
+  Widget _buildJogadorWidget(Jogador jogador, Color corTime) {
     final theme = Theme.of(context);
     
     return Column(
@@ -248,36 +334,23 @@ class _CampoFutebolWidgetState extends State<CampoFutebolWidget>
           ),
           child: Center(
             child: Text(
-              jogador.nome.isNotEmpty 
-                  ? jogador.nome[0].toUpperCase() 
-                  : '?',
-              style: theme.textTheme.titleMedium?.copyWith(
+              jogador.nome.substring(0, 1).toUpperCase(),
+              style: theme.textTheme.headlineSmall?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
         ),
-        
         const SizedBox(height: 4.0),
-        
-        // Nome do jogador
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8.0,
-            vertical: 4.0,
+        // Nome do jogador (opcional, pode ser removido se ocupar muito espaço)
+        Text(
+          jogador.nome.split(' ').first, // Exibe apenas o primeiro nome
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
           ),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(4.0),
-          ),
-          child: Text(
-            jogador.nome,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -319,74 +392,95 @@ class _CampoFutebolWidgetState extends State<CampoFutebolWidget>
 class CampoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
+    // Definir as cores do campo
+    final fieldColor = Colors.green.shade500; // Cor principal do campo
+    final lineColor = Colors.white; // Cor das linhas
+
+    // Pincel para preencher o fundo do campo
+    final fieldBackgroundPaint = Paint()
+      ..color = fieldColor
+      ..style = PaintingStyle.fill;
+
+    // Aplicar clip para respeitar o borderRadius do Container pai
+    canvas.clipRRect(RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(16.0)));
+
+    // Preencher o fundo de todo o campo primeiro
+    canvas.drawRect(Offset.zero & size, fieldBackgroundPaint);
+
+    // Pincel para as linhas do campo (contorno)
+    final whitePaint = Paint()
+      ..color = lineColor
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
 
-    final fillPaint = Paint()
-      ..color = Colors.green.shade200.withOpacity(0.3)
+    // Pincel para o ponto central (preenchido)
+    final filledWhitePaint = Paint()
+      ..color = lineColor
       ..style = PaintingStyle.fill;
 
-    // Fundo do campo
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      fillPaint,
-    );
+    // Linhas do campo
+    canvas.drawRect(Offset.zero & size, whitePaint); // Campo principal
 
-    // Linha central
-    canvas.drawLine(
-      Offset(size.width / 2, 0),
-      Offset(size.width / 2, size.height),
-      paint,
-    );
+    final center = Offset(size.width / 2, size.height / 2);
+
+    // Linha do meio
+    canvas.drawLine(Offset(center.dx, 0), Offset(center.dx, size.height), whitePaint);
 
     // Círculo central
-    canvas.drawCircle(
-      Offset(size.width / 2, size.height / 2),
-      size.height * 0.15,
-      paint,
-    );
+    canvas.drawCircle(center, size.width * 0.15, whitePaint);
 
-    // Área do goleiro esquerda
-    final areaGolEsq = Rect.fromLTWH(
-      0,
-      size.height * 0.3,
-      size.width * 0.15,
-      size.height * 0.4,
-    );
-    canvas.drawRect(areaGolEsq, paint);
+    // Ponto central
+    canvas.drawCircle(center, 3.0, filledWhitePaint);
 
-    // Área do goleiro direita
-    final areaGolDir = Rect.fromLTWH(
-      size.width * 0.85,
-      size.height * 0.3,
-      size.width * 0.15,
-      size.height * 0.4,
-    );
-    canvas.drawRect(areaGolDir, paint);
+    // Áreas do gol (preencher com a cor do campo e depois desenhar as linhas)
+    final areaWidth = size.width * 0.15;
+    final areaHeight = size.height * 0.4;
 
-    // Marca do pênalti esquerda
-    canvas.drawCircle(
-      Offset(size.width * 0.1, size.height / 2),
-      3.0,
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.fill,
-    );
+    // Pincel para preencher as áreas do gol com a mesma cor do campo
+    final goalAreaFillPaint = Paint()
+      ..color = fieldColor
+      ..style = PaintingStyle.fill;
 
-    // Marca do pênalti direita
-    canvas.drawCircle(
-      Offset(size.width * 0.9, size.height / 2),
-      3.0,
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.fill,
+    // Área esquerda
+    canvas.drawRect(Rect.fromLTWH(0, (size.height - areaHeight) / 2, areaWidth, areaHeight), goalAreaFillPaint);
+    canvas.drawRect(Rect.fromLTWH(0, (size.height - areaHeight) / 2, areaWidth, areaHeight), whitePaint);
+
+    // Área direita
+    canvas.drawRect(Rect.fromLTWH(size.width - areaWidth, (size.height - areaHeight) / 2, areaWidth, areaHeight), goalAreaFillPaint);
+    canvas.drawRect(Rect.fromLTWH(size.width - areaWidth, (size.height - areaHeight) / 2, areaWidth, areaHeight), whitePaint);
+
+    // Pequenas áreas do gol
+    final smallAreaWidth = size.width * 0.05;
+    final smallAreaHeight = size.height * 0.2;
+
+    canvas.drawRect(Rect.fromLTWH(0, (size.height - smallAreaHeight) / 2, smallAreaWidth, smallAreaHeight), goalAreaFillPaint);
+    canvas.drawRect(Rect.fromLTWH(0, (size.height - smallAreaHeight) / 2, smallAreaWidth, smallAreaHeight), whitePaint);
+
+    canvas.drawRect(Rect.fromLTWH(size.width - smallAreaWidth, (size.height - smallAreaHeight) / 2, smallAreaWidth, smallAreaHeight), goalAreaFillPaint);
+    canvas.drawRect(Rect.fromLTWH(size.width - smallAreaWidth, (size.height - smallAreaHeight) / 2, smallAreaWidth, smallAreaHeight), whitePaint);
+
+    // Arcos das áreas
+    final goalArcRadius = size.width * 0.08;
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(areaWidth, center.dy), radius: goalArcRadius),
+      -pi / 2,
+      pi,
+      false,
+      whitePaint,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(size.width - areaWidth, center.dy), radius: goalArcRadius),
+      pi / 2,
+      pi,
+      false,
+      whitePaint,
     );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
+  }
 }
 
 extension on FractionalOffset {

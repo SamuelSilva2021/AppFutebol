@@ -8,6 +8,9 @@ class JogadorCard extends StatelessWidget {
   final bool showActions;
   final bool isSelected;
   final VoidCallback? onTap;
+  final bool showOverallPosition;
+  final Color? overallColor;
+  final String? playerPosition;
 
   const JogadorCard({
     super.key,
@@ -17,6 +20,9 @@ class JogadorCard extends StatelessWidget {
     this.showActions = true,
     this.isSelected = false,
     this.onTap,
+    this.showOverallPosition = false,
+    this.overallColor,
+    this.playerPosition,
   });
 
   @override
@@ -95,42 +101,82 @@ class JogadorCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4.0),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.star_rounded,
-                          size: 16.0,
-                          color: _getOverallColor(colorScheme),
-                        ),
-                        const SizedBox(width: 4.0),
-                        Text(
-                          'Overall ${jogador.overall}',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: _getOverallColor(colorScheme),
-                            fontWeight: FontWeight.w500,
+                    if (showOverallPosition)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.star_rounded,
+                            size: 16.0,
+                            color: overallColor ?? _getOverallColor(colorScheme),
                           ),
-                        ),
-                        const SizedBox(width: 8.0),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8.0,
-                            vertical: 2.0,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getOverallColor(colorScheme).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          child: Text(
-                            _getOverallLabel(),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: _getOverallColor(colorScheme),
+                          const SizedBox(width: 4.0),
+                          Text(
+                            'Overall ${jogador.overall}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: overallColor ?? _getOverallColor(colorScheme),
                               fontWeight: FontWeight.w500,
-                              fontSize: 10.0,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                          if (playerPosition != null) ...[
+                            const SizedBox(width: 8.0),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8.0,
+                                vertical: 2.0,
+                              ),
+                              decoration: BoxDecoration(
+                                color: (overallColor ?? _getOverallColor(colorScheme)).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                              child: Text(
+                                playerPosition!,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: overallColor ?? _getOverallColor(colorScheme),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 10.0,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    if (!showOverallPosition)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.star_rounded,
+                            size: 16.0,
+                            color: _getOverallColor(colorScheme),
+                          ),
+                          const SizedBox(width: 4.0),
+                          Text(
+                            'Overall ${jogador.overall}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: _getOverallColor(colorScheme),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 8.0),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
+                              vertical: 2.0,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getOverallColor(colorScheme).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                            child: Text(
+                              _getOverallLabel(),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: _getOverallColor(colorScheme),
+                                fontWeight: FontWeight.w500,
+                                fontSize: 10.0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -220,6 +266,7 @@ class JogadorCard extends StatelessWidget {
   }
 
   Color _getOverallColor(ColorScheme colorScheme) {
+    if (overallColor != null) return overallColor!;
     if (jogador.overall >= 90) return Colors.green;
     if (jogador.overall >= 80) return colorScheme.secondary;
     if (jogador.overall >= 70) return colorScheme.tertiary;
@@ -228,10 +275,10 @@ class JogadorCard extends StatelessWidget {
   }
 
   String _getOverallLabel() {
-    if (jogador.overall >= 90) return 'CRAQUE';
-    if (jogador.overall >= 80) return 'MAESTRO';
-    if (jogador.overall >= 70) return 'BOM';
-    if (jogador.overall >= 60) return 'REGULAR';
-    return 'INICIANTE';
+    if (jogador.overall >= 90) return 'Craque';
+    if (jogador.overall >= 80) return 'Excelente';
+    if (jogador.overall >= 70) return 'Bom';
+    if (jogador.overall >= 60) return 'Médio';
+    return 'Iniciante';
   }
 }
