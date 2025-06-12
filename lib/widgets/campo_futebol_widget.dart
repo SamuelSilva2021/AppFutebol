@@ -194,12 +194,12 @@ class _CampoFutebolWidgetState extends State<CampoFutebolWidget>
   Widget _buildPosicionamentoJogadores(List<Jogador> jogadores, Color corTime) {
     // Posições fixas no campo (percentuais da largura/altura)
     final posicoes = [
-      const Offset(0.15, 0.5),  // Goleiro
-      const Offset(0.35, 0.25), // Zagueiro 1
-      const Offset(0.35, 0.75), // Zagueiro 2
-      const Offset(0.6, 0.35),  // Meio-campo 1
-      const Offset(0.6, 0.65),  // Meio-campo 2
-      const Offset(0.85, 0.5),  // Atacante
+      const Offset(0.03, 0.35),   // Goleiro (esquerda)
+      const Offset(0.2, 0.03),  // Zagueiro 1 (esquerda superior)
+      const Offset(0.2, 0.55),  // Zagueiro 2 (esquerda inferior)
+      const Offset(0.45, 0.35),  // Meio-campo 1 (centro superior)
+      const Offset(0.70, 0.1),  // Meio-campo 2 (centro inferior)
+      const Offset(0.70, 0.55),  // Atacante (direita)
     ];
 
     return Stack(
@@ -212,16 +212,10 @@ class _CampoFutebolWidgetState extends State<CampoFutebolWidget>
             ? posicoes[index] 
             : Offset(0.5 + (index % 2 == 0 ? 0.1 : -0.1), 0.5 + (index % 3 == 0 ? 0.1 : -0.1));
         
-        return Positioned.fill(
-          child: FractionallySizedBox(
-            alignment: Alignment.topLeft,
-            child: FractionalOffset(
-              posicao.dx,
-              posicao.dy,
-            ).withinOffset(
-              child: _buildJogadorWidget(jogador, corTime, index),
-            ),
-          ),
+        return Positioned(
+          left: posicao.dx * MediaQuery.of(context).size.width * 0.8,
+          top: posicao.dy * MediaQuery.of(context).size.width * 0.5,
+          child: _buildJogadorWidget(jogador, corTime, index),
         );
       }).toList(),
     );
@@ -229,96 +223,63 @@ class _CampoFutebolWidgetState extends State<CampoFutebolWidget>
 
   Widget _buildJogadorWidget(Jogador jogador, Color corTime, int posicao) {
     final theme = Theme.of(context);
-    final posicaoNome = _getNomePosicao(posicao);
     
-    return Transform.translate(
-      offset: const Offset(-35, -35), // Centralizar o widget
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Avatar do jogador
-          Container(
-            width: 50.0,
-            height: 50.0,
-            decoration: BoxDecoration(
-              color: corTime,
-              shape: BoxShape.circle,
-              border: Border.all(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Avatar do jogador
+        Container(
+          width: 50.0,
+          height: 50.0,
+          decoration: BoxDecoration(
+            color: corTime,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white,
+              width: 2.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 4.0,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              jogador.nome.isNotEmpty 
+                  ? jogador.nome[0].toUpperCase() 
+                  : '?',
+              style: theme.textTheme.titleMedium?.copyWith(
                 color: Colors.white,
-                width: 2.0,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 4.0,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                jogador.nome.isNotEmpty 
-                    ? jogador.nome[0].toUpperCase() 
-                    : '?',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          
-          const SizedBox(height: 4.0),
-          
-          // Nome do jogador
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 6.0,
-              vertical: 2.0,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(6.0),
-              border: Border.all(
-                color: corTime.withOpacity(0.3),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _getNomeResumido(jogador.nome),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: corTime,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10.0,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  posicaoNome,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: corTime.withOpacity(0.7),
-                    fontSize: 8.0,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                Text(
-                  '${jogador.overall}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: corTime,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 9.0,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+        ),
+        
+        const SizedBox(height: 4.0),
+        
+        // Nome do jogador
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 8.0,
+            vertical: 4.0,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(4.0),
+          ),
+          child: Text(
+            jogador.nome,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

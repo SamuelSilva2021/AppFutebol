@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '⚽ Soccer Teams - Sorteio de Times',
+      title: '⚽ Bola Murcha F.C - Sorteio de Times',
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: ThemeMode.system,

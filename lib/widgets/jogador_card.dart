@@ -228,10 +228,10 @@ class JogadorCard extends StatelessWidget {
   }
 
   String _getOverallLabel() {
-    if (jogador.overall >= 90) return 'ELITE';
-    if (jogador.overall >= 80) return 'EXPERT';
+    if (jogador.overall >= 90) return 'CRAQUE';
+    if (jogador.overall >= 80) return 'MAESTRO';
     if (jogador.overall >= 70) return 'BOM';
-    if (jogador.overall >= 60) return 'MÉDIO';
+    if (jogador.overall >= 60) return 'REGULAR';
     return 'INICIANTE';
   }
 }

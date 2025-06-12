@@ -379,8 +379,8 @@ class _CadastroJogadorPageState extends State<CadastroJogadorPage> with TickerPr
   }
 
   String _getOverallLabel() {
-    if (_overall >= 90) return 'Excelente';
-    if (_overall >= 80) return 'Muito Bom';
+    if (_overall >= 90) return 'Craque';
+    if (_overall >= 80) return 'Maestro';
     if (_overall >= 70) return 'Bom';
     if (_overall >= 60) return 'Regular';
     return 'Iniciante';

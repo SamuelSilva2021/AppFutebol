@@ -597,7 +597,7 @@ class _TimesPageState extends State<TimesPage> with TickerProviderStateMixin {
     // Simular compartilhamento
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Funcionalidade de compartilhamento seria implementada aqui'),
+        content: const Text('Funcionalidade inda não implementada, tenha calma'),
         backgroundColor: colorScheme.secondary,
         action: SnackBarAction(
           label: 'OK',

@@ -59,7 +59,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text(
-          '⚽ Soccer Teams',
+          '⚽ Bola Murcha F.C',
           style: theme.textTheme.headlineSmall?.copyWith(
             color: colorScheme.onSurface,
             fontWeight: FontWeight.bold,
@@ -114,7 +114,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 8.0),
                     Text(
-                      'Organize times balanceados para suas partidas',
+                      'Samuel resolveu criar por que estava cansado de ser enganado pelo app do Wallace',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onPrimary.withOpacity(0.9),
