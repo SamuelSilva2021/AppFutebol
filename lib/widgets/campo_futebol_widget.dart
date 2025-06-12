@@ -81,13 +81,14 @@ class _CampoFutebolWidgetState extends State<CampoFutebolWidget>
 
   // Novo método para inicializar as posições
   void _initializePlayerPositions() {
-    final List<Offset> defaultPositions = [
+    // Posições padrão para 6 jogadores (do menor para o maior overall)
+    final defaultPositions = [
       const Offset(0.05, 0.45),   // Posição para o Goleiro (menor overall)
-      const Offset(0.2, 0.15),  // Posição para Zagueiro 1 (2º menor overall)
-      const Offset(0.2, 0.75),  // Posição para Zagueiro 2 (3º menor overall)
-      const Offset(0.50, 0.50),  // Posição para Meio-campo 1 (4º menor overall)
-      const Offset(0.70, 0.15),  // Posição para Meio-campo 2 (5º menor overall)
-      const Offset(0.70, 0.75),  // Posição para Atacante (6º menor overall - ou maior se só tiver 6)
+      const Offset(0.2, 0.15),    // Posição para Zagueiro 1 (2º menor overall)
+      const Offset(0.2, 0.75),    // Posição para Zagueiro 2 (3º menor overall)
+      const Offset(0.50, 0.50),   // Posição para Meio-campo 1 (4º menor overall)
+      const Offset(0.70, 0.15),   // Posição para Meio-campo 2 (5º menor overall)
+      const Offset(0.70, 0.75),   // Posição para Atacante (maior overall)
     ];
 
     for (final time in widget.times) {
@@ -99,11 +100,10 @@ class _CampoFutebolWidgetState extends State<CampoFutebolWidget>
         final jogador = jogadoresDoTimeOrdenados[i];
         if (!_playerPositions.containsKey(jogador.id)) {
           // Atribui a posição fixa baseada na ordem de overall
-          // Se o número de jogadores for maior que as posições fixas, usa a lógica de fallback
           final pos = i < defaultPositions.length
               ? defaultPositions[i]
               : Offset(
-                  0.5 + (i % 2 == 0 ? 0.1 : -0.1), // Fallback para jogadores extras
+                  0.5 + (i % 2 == 0 ? 0.1 : -0.1),
                   0.5 + (i % 3 == 0 ? 0.1 : -0.1),
                 );
           _playerPositions[jogador.id] = pos;

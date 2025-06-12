@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../theme.dart';
 import '../../models/jogador.dart';
 import '../../models/time.dart';
@@ -249,6 +250,10 @@ class _TimesPageState extends State<TimesPage> with TickerProviderStateMixin {
     final colorScheme = theme.colorScheme;
     final corTime = Color(int.parse(time.cor.replaceFirst('#', '0xFF')));
 
+    // Ordena os jogadores igual ao campo (do menor para o maior overall)
+    final jogadoresOrdenados = List<Jogador>.from(time.jogadores)
+      ..sort((a, b) => a.overall.compareTo(b.overall));
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -358,7 +363,7 @@ class _TimesPageState extends State<TimesPage> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 16.0),
           
-          ...time.jogadores.asMap().entries.map((entry) {
+          ...jogadoresOrdenados.asMap().entries.map((entry) {
             final index = entry.key;
             final jogador = entry.value;
             
@@ -591,21 +596,42 @@ class _TimesPageState extends State<TimesPage> with TickerProviderStateMixin {
   }
 
   void _compartilharResultado() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    // Simular compartilhamento
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Funcionalidade inda não implementada, tenha calma'),
-        backgroundColor: colorScheme.secondary,
-        action: SnackBarAction(
-          label: 'OK',
-          textColor: colorScheme.onSecondary,
-          onPressed: () {},
-        ),
-      ),
-    );
+    final buffer = StringBuffer();
+    
+    for (final time in widget.times) {
+      buffer.writeln('🏃 ${time.nome}');
+      buffer.writeln('Overall: ${time.overallMedio.toStringAsFixed(1)}');
+      buffer.writeln('Jogadores:');
+      
+      // Ordena os jogadores igual ao campo
+      final jogadoresOrdenados = List<Jogador>.from(time.jogadores)
+        ..sort((a, b) => a.overall.compareTo(b.overall));
+      
+      for (int i = 0; i < jogadoresOrdenados.length; i++) {
+        final jogador = jogadoresOrdenados[i];
+        String posicao;
+        switch (i) {
+          case 0: posicao = '🥅 Goleiro'; break;
+          case 1:
+          case 2: posicao = '🛡️ Zagueiro'; break;
+          case 3:
+          case 4: posicao = '⚡ Meio-campo'; break;
+          case 5: posicao = '⚽ Atacante'; break;
+          default: posicao = 'Jogador';
+        }
+        buffer.writeln('$posicao: ${jogador.nome} (${jogador.overall})');
+      }
+      buffer.writeln(''); // Linha em branco entre times
+    }
+    
+    if (widget.jogadoresSobra.isNotEmpty) {
+      buffer.writeln('📋 Reservas:');
+      for (final jogador in widget.jogadoresSobra) {
+        buffer.writeln('${jogador.nome} (${jogador.overall})');
+      }
+    }
+    
+    Share.share(buffer.toString(), subject: 'Times Sorteados');
   }
 
   void _novoSorteio() {
