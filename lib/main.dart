@@ -1,19 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import 'theme.dart';
-import 'pages/home_page.dart';
-import 'services/database_service.dart';
+import 'package:futebol_wallace/pages/home_page.dart';
+import 'package:futebol_wallace/theme.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inicializa o banco de dados
-  try {
-    await DatabaseService().database;
-  } catch (e) {
-    print('Erro ao inicializar banco de dados: $e');
-  }
-  
+void main() {
   runApp(const MyApp());
 }
 
@@ -23,10 +12,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '⚽ Bola Murcha F.C - Sorteio de Times',
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      themeMode: ThemeMode.system,
+      title: 'Futebol App',
+      theme: AppTheme.lightTheme,
       home: const HomePage(),
       debugShowCheckedModeBanner: false,
     );

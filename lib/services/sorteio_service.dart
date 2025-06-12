@@ -14,12 +14,12 @@ class SorteioService {
     '#E91E63', // Rosa
   ];
   
-  static List<Time> sortearTimes(List<Jogador> jogadores) {
-    if (jogadores.length < 6) {
-      throw Exception('É necessário pelo menos 6 jogadores para formar um time');
+  static List<Time> sortearTimes(List<Jogador> jogadores, {required int jogadoresPorTime}) {
+    if (jogadores.length < jogadoresPorTime) {
+      throw Exception('É necessário pelo menos $jogadoresPorTime jogadores para formar um time');
     }
     
-    final int numeroTimes = jogadores.length ~/ 6;
+    final int numeroTimes = jogadores.length ~/ jogadoresPorTime;
     final List<Time> times = [];
     
     // Ordenar jogadores por overall (maior para menor)
@@ -38,7 +38,7 @@ class SorteioService {
     // Distribuir jogadores de forma balanceada
     for (int i = 0; i < jogadoresOrdenados.length; i++) {
       final timeIndex = i % numeroTimes;
-      if (times[timeIndex].jogadores.length < 6) {
+      if (times[timeIndex].jogadores.length < jogadoresPorTime) {
         times[timeIndex].jogadores.add(jogadoresOrdenados[i]);
       }
     }
